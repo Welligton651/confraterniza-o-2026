@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confraternização Motoristas 2026</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonte Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Checkbox Style */
+        .check-anim { transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .check-btn:active .check-anim { transform: scale(0.8); }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 pb-40 relative overflow-x-hidden">
+
+    <!-- Fundo -->
+    <div class="fixed inset-0 z-0">
+        <img src="https://i.ibb.co/Nn2cxY2L/Screenshot-20260114-182334-Photos.jpg" alt="Confraternização Fundo" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-b from-slate-900/95 via-slate-900/90 to-slate-200/95"></div>
+    </div>
+
+    <!-- Conteúdo -->
+    <div class="relative z-10">
+        
+        <!-- HEADER -->
+        <header class="bg-slate-900/50 backdrop-blur-md text-white pt-6 pb-20 px-4 rounded-b-[3rem] shadow-2xl relative border-b border-white/10">
+            <div class="max-w-4xl mx-auto relative z-10">
+                
+                <!-- Status -->
+                <div class="absolute top-0 right-0 p-4">
+                    <div id="connection-status" class="flex items-center gap-2 text-[10px] uppercase font-bold text-yellow-500 bg-black/20 px-2 py-1 rounded-full">
+                        <div class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
+                        Iniciando...
+                    </div>
+                </div>
+
+                <!-- Título -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 mt-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1 text-blue-300">
+                            <span id="icon-calendar-head"></span>
+                            <span class="text-xs font-bold tracking-widest uppercase">Planejamento 2026</span>
+                        </div>
+                        <h1 class="text-3xl font-extrabold leading-none">
+                            Confraternização<br/>
+                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-white">Dos Motoristas</span>
+                        </h1>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10">
+                        <div class="text-right">
+                            <p class="text-[10px] text-gray-400 uppercase font-bold">Mensalidade</p>
+                            <p class="text-xl font-bold font-mono">R$ <span id="display-fee">30</span></p>
+                        </div>
+                        <div class="h-8 w-px bg-white/10 mx-1"></div>
+                        <input type="number" id="input-fee" value="30" class="bg-transparent w-16 text-right border-b border-white/20 focus:border-blue-400 outline-none text-sm text-gray-300 py-1" placeholder="30">
+                    </div>
+                </div>
+
+                <!-- DASHBOARD E GRÁFICOS -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    
+                    <!-- Card 1: Gráfico Pizza de Status -->
+                    <div class="bg-slate-800/80 p-5 rounded-2xl border border-white/10 flex items-center justify-between relative overflow-hidden group">
+                        <div class="relative z-10 flex flex-col justify-center h-full">
+                            <p class="text-xs text-gray-400 font-bold uppercase mb-2 flex items-center gap-2">
+                                <span id="icon-pie-title"></span> Status Pagamentos
+                            </p>
+                            
+                            <div class="flex flex-col gap-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
+                                    <div class="flex flex-col leading-none">
+                                        <span class="text-lg font-bold text-white" id="stat-paid">0</span>
+                                        <span class="text-[10px] text-gray-400 uppercase">Quitados</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-3 h-3 rounded-full bg-slate-600"></div>
+                                    <div class="flex flex-col leading-none">
+                                        <span class="text-lg font-bold text-gray-300" id="stat-pending">0</span>
+                                        <span class="text-[10px] text-gray-500 uppercase">Pendentes</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SVG Pie Chart -->
+                        <div class="relative w-24 h-24 flex-shrink-0 mr-2">
+                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                <!-- Fundo (Pendente) -->
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#334155" stroke-width="4" />
+                                <!-- Frente (Pago) -->
+                                <circle id="pie-chart-circle" cx="18" cy="18" r="16" fill="none" stroke="#22c55e" stroke-width="4" stroke-dasharray="0 100" stroke-linecap="round" />
+                            </svg>
+                            <div class="absolute inset-0 flex items-center justify-center flex-col text-white/50" id="icon-pie-center">
+                                <!-- Icon inserted via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Financeiro -->
+                    <div class="md:col-span-2 bg-gradient-to-br from-slate-800/90 to-slate-900/90 p-5 rounded-2xl border border-white/10 flex flex-col justify-between">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-xs text-gray-400 font-bold uppercase mb-1 flex items-center gap-2">
+                                    <span id="icon-dollar-stat"></span> Arrecadação Total
+                                </p>
+                                <p class="text-4xl font-bold text-green-400 tracking-tight" id="stat-money-collected">R$ 0</p>
+                                <p class="text-xs text-gray-500 mt-1">Meta Potencial: <span id="stat-money-potential">R$ 0</span></p>
+                            </div>
+                            <div class="bg-green-500/10 p-2 rounded-lg text-green-500" id="icon-trophy-stat"></div>
+                        </div>
+
+                        <div class="relative pt-2">
+                            <div class="flex justify-between text-xs font-bold text-gray-400 mb-1">
+                                <span>Progresso da Meta</span>
+                                <span id="stat-percent">0%</span>
+                            </div>
+                            <div class="h-3 w-full bg-slate-700 rounded-full overflow-hidden shadow-inner">
+                                <div id="main-progress-bar" class="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-1000 ease-out relative" style="width: 0%">
+                                    <div class="absolute inset-0 bg-white/20 animate-pulse"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- LISTA DE MOTORISTAS -->
+        <main class="max-w-4xl mx-auto px-4 -mt-12 relative z-20">
+            
+            <!-- Controles -->
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                <div class="flex-1 bg-white p-1.5 rounded-xl shadow-lg border border-gray-100 flex gap-2">
+                    <div class="relative flex-1">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400" id="icon-plus-input"></div>
+                        <input type="text" id="input-new-name" placeholder="Novo motorista..." class="w-full pl-9 pr-4 py-2.5 bg-gray-50 rounded-lg border-none outline-none focus:ring-2 focus:ring-blue-100 text-gray-800 placeholder-gray-400 text-sm font-medium">
+                    </div>
+                    <button onclick="window.addDriver()" class="bg-slate-900 hover:bg-slate-800 text-white px-5 rounded-lg font-bold text-sm transition-transform active:scale-95 shadow-lg">Adicionar</button>
+                </div>
+
+                <div class="bg-white p-1.5 rounded-xl shadow-lg border border-gray-100 flex gap-1 self-start md:self-stretch">
+                    <button onclick="window.setViewMode('grid')" id="btn-view-grid" class="p-2.5 rounded-lg transition-all text-gray-400 hover:text-gray-600" title="Quadro"></button>
+                    <button onclick="window.setViewMode('list')" id="btn-view-list" class="p-2.5 rounded-lg transition-all text-gray-400 hover:text-gray-600" title="Lista Detalhada"></button>
+                    <button onclick="window.setViewMode('compact')" id="btn-view-compact" class="p-2.5 rounded-lg transition-all text-gray-400 hover:text-gray-600" title="Lista Compacta"></button>
+                </div>
+            </div>
+
+            <!-- Container da Lista -->
+            <div id="drivers-list-container" class="pb-10 min-h-[300px]">
+                <div class="flex justify-center py-20" id="loading-spinner">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- RODAPÉ -->
+        <div class="fixed bottom-0 left-0 right-0 p-3 bg-white/80 backdrop-blur-md border-t border-gray-200 z-50">
+            <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div class="flex flex-col hidden sm:block">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase" id="sync-label">Status</span>
+                    <span class="text-xs text-gray-600" id="sync-sublabel">Carregando...</span>
+                </div>
+                
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button onclick="window.shareAlphabeticalList()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 shadow-lg transition-all hover:-translate-y-0.5 flex-1 sm:flex-none">
+                        <span id="icon-az-btn"></span>
+                        <span>Lista (A-Z)</span>
+                    </button>
+                    <button onclick="window.shareWhatsApp()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 shadow-lg transition-all hover:-translate-y-0.5 flex-1 sm:flex-none">
+                        <span id="icon-whatsapp-btn"></span>
+                        <span class="hidden sm:inline">Relatório Financeiro</span>
+                        <span class="sm:hidden">Relatório</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- LOGICA DO SISTEMA -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // --- Configuração Firebase ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyA08NvEhJ_wQDYP88X2tysohKUMth4qz0g",
+          authDomain: "fir-s-m-f1d0f.firebaseapp.com",
+          projectId: "fir-s-m-f1d0f",
+          storageBucket: "fir-s-m-f1d0f.firebasestorage.app",
+          messagingSenderId: "55884894529",
+          appId: "1:55884894529:web:a311bb71466b00cefbd1c0",
+          measurementId: "G-VLGKB7EF0M"
+        };
+
+        const COLLECTION_NAME = "drivers_2026";
+        const LOCAL_STORAGE_KEY = "confra_motoristas_2026_offline";
+
+        let app, db, auth;
+        let drivers = [];
+        let isOfflineMode = false;
+        let monthlyFee = 30;
+        let viewMode = localStorage.getItem('viewMode') || 'grid';
+        const savedFee = localStorage.getItem('confra_fee_2026');
+        if (savedFee) monthlyFee = Number(savedFee);
+
+        async function initApp() {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                await signInAnonymously(auth);
+                console.log("Conectado ao Firebase!");
+                setupRealtimeListener();
+                updateConnectionStatus(true);
+            } catch (error) {
+                console.warn("Modo Offline Ativado:", error.code);
+                enableOfflineMode();
+            }
+        }
+
+        function setupRealtimeListener() {
+            const q = query(collection(db, COLLECTION_NAME), orderBy("createdAt", "asc"));
+            onSnapshot(q, (snapshot) => {
+                drivers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(drivers));
+                updateUI();
+            }, (error) => {
+                console.error("Erro no listener:", error);
+                enableOfflineMode();
+            });
+        }
+
+        function enableOfflineMode() {
+            isOfflineMode = true;
+            updateConnectionStatus(false);
+            const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+            drivers = savedData ? JSON.parse(savedData) : [];
+            updateUI();
+        }
+
+        function saveToLocalStorage() {
+            if (isOfflineMode) {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(drivers));
+                updateUI();
+            }
+        }
+
+        function updateConnectionStatus(isOnline) {
+            // Usamos a função safe para evitar o erro se o elemento ainda não existir
+            safeSetHTML('connection-status', isOnline 
+                ? '<div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Online' 
+                : '<div class="w-2 h-2 rounded-full bg-orange-500"></div> Offline'
+            );
+            
+            const statusEl = document.getElementById('connection-status');
+            if (statusEl) {
+                statusEl.className = isOnline 
+                    ? 'flex items-center gap-2 text-[10px] uppercase font-bold text-green-400 bg-black/20 px-2 py-1 rounded-full fade-in'
+                    : 'flex items-center gap-2 text-[10px] uppercase font-bold text-orange-400 bg-black/20 px-2 py-1 rounded-full fade-in';
+            }
+            safeSetText('sync-label', isOnline ? "Sincronização Ativa" : "Modo Offline");
+            safeSetText('sync-sublabel', isOnline ? "Dados na nuvem." : "Salvo neste dispositivo.");
+        }
+
+        // --- Funções Globais ---
+        window.addDriver = async function() {
+            const input = document.getElementById('input-new-name');
+            const name = input.value.trim();
+            if (!name) return;
+
+            if (isOfflineMode) {
+                const newDriver = {
+                    id: Date.now().toString(),
+                    name: name,
+                    payments: { fev: false, mar: false, abr: false, mai: false, jun: false, jul: false },
+                    createdAt: new Date().toISOString()
+                };
+                drivers.push(newDriver);
+                saveToLocalStorage();
+                input.value = '';
+            } else {
+                try {
+                    await addDoc(collection(db, COLLECTION_NAME), {
+                        name: name,
+                        payments: { fev: false, mar: false, abr: false, mai: false, jun: false, jul: false },
+                        createdAt: serverTimestamp()
+                    });
+                    input.value = '';
+                } catch (e) {
+                    alert("Erro ao adicionar. Verifique conexão.");
+                }
+            }
+        };
+
+        window.togglePayment = async function(driverId, monthKey) {
+            const driver = drivers.find(d => d.id === driverId);
+            if (!driver) return;
+            
+            const newStatus = !driver.payments[monthKey];
+            if (isOfflineMode) {
+                driver.payments[monthKey] = newStatus;
+                saveToLocalStorage();
+            } else {
+                const driverRef = doc(db, COLLECTION_NAME, driverId);
+                try {
+                    await updateDoc(driverRef, { [`payments.${monthKey}`]: newStatus });
+                } catch (e) { console.error(e); }
+            }
+        };
+
+        window.deleteDriver = async function(id) {
+            if (!confirm('Tem certeza que deseja remover este motorista?')) return;
+
+            if (isOfflineMode) {
+                drivers = drivers.filter(d => d.id !== id);
+                saveToLocalStorage();
+            } else {
+                try {
+                    await deleteDoc(doc(db, COLLECTION_NAME, id));
+                } catch (e) { console.error("Erro ao deletar:", e); }
+            }
+        };
+
+        window.setViewMode = function(mode) {
+            viewMode = mode;
+            localStorage.setItem('viewMode', mode);
+            updateUI();
+        };
+
+        window.shareAlphabeticalList = function() {
+            if (drivers.length === 0) { alert("Lista vazia!"); return; }
+            const sortedDrivers = [...drivers].sort((a, b) => a.name.localeCompare(b.name));
+            let text = `📋 *LISTA DE PARTICIPANTES (A-Z)*\nConfraternização 2026\n\n`;
+            sortedDrivers.forEach((driver, index) => { text += `${index + 1}. ${driver.name}\n`; });
+            text += `\nTotal: ${sortedDrivers.length} Motoristas`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        };
+
+        window.shareWhatsApp = function() {
+            if (drivers.length === 0) { alert("Adicione motoristas primeiro!"); return; }
+            const paidDrivers = [], pendingDrivers = [];
+            const monthsRef = [{k:'fev',l:'Fev'},{k:'mar',l:'Mar'},{k:'abr',l:'Abr'},{k:'mai',l:'Mai'},{k:'jun',l:'Jun'},{k:'jul',l:'Jul'}];
+
+            drivers.forEach(d => {
+                const paidCount = Object.values(d.payments || {}).filter(Boolean).length;
+                if (paidCount === 6) paidDrivers.push(d.name);
+                else {
+                    const missing = monthsRef.filter(m => !d.payments?.[m.k]).map(m => m.l).join(', ');
+                    pendingDrivers.push(`${d.name} (Falta: ${missing})`);
+                }
+            });
+
+            let text = `🚗 *CONFRATERNIZAÇÃO 2026* 🚗\nRelatório Financeiro\n\n`;
+            if (paidDrivers.length > 0) { text += `✅ *PAGAMENTO COMPLETO:*\n`; paidDrivers.forEach(n => text += `- ${n}\n`); text += `\n`; }
+            if (pendingDrivers.length > 0) { text += `⚠️ *PENDENTES:*\n`; pendingDrivers.forEach(i => text += `- ${i}\n`); }
+            text += `\n📅 ${new Date().toLocaleDateString()}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        };
+
+        // UI Listeners
+        const inputFee = document.getElementById('input-fee');
+        if(inputFee) {
+            inputFee.addEventListener('change', (e) => {
+                monthlyFee = Number(e.target.value);
+                localStorage.setItem('confra_fee_2026', monthlyFee.toString());
+                updateUI();
+            });
+        }
+        
+        const inputName = document.getElementById('input-new-name');
+        if(inputName) {
+            inputName.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') window.addDriver();
+            });
+        }
+
+        // --- SAFE DOM HELPERS ---
+        // Estas funções previnem o erro "Cannot set properties of null"
+        function safeSetText(id, text) {
+            const el = document.getElementById(id);
+            if(el) el.innerText = text;
+        }
+        function safeSetHTML(id, html) {
+            const el = document.getElementById(id);
+            if(el) el.innerHTML = html;
+        }
+        function safeSetStyle(id, prop, value) {
+            const el = document.getElementById(id);
+            if(el) el.style[prop] = value;
+        }
+        function safeSetAttr(id, attr, value) {
+            const el = document.getElementById(id);
+            if(el) el.setAttribute(attr, value);
+        }
+
+        // UI Rendering
+        function updateUI() {
+            const spinner = document.getElementById('loading-spinner');
+            if (spinner) spinner.remove();
+            renderStats();
+            renderDriversList();
+            updateViewButtons();
+            
+            const feeInput = document.getElementById('input-fee');
+            if(feeInput) feeInput.value = monthlyFee;
+        }
+
+        function renderStats() {
+            const totalDrivers = drivers.length;
+            const fullyPaidCount = drivers.filter(d => Object.values(d.payments || {}).filter(Boolean).length === 6).length;
+            const pendingCount = totalDrivers - fullyPaidCount;
+            const totalCollected = drivers.reduce((acc, d) => acc + (Object.values(d.payments || {}).filter(Boolean).length * monthlyFee), 0);
+            const totalPotential = totalDrivers * 6 * monthlyFee;
+            const percent = totalPotential > 0 ? (totalCollected / totalPotential) * 100 : 0;
+
+            // Uso das funções seguras para evitar travamentos
+            safeSetText('display-fee', monthlyFee);
+            safeSetText('stat-paid', fullyPaidCount);
+            safeSetText('stat-pending', pendingCount);
+            safeSetText('stat-total-drivers', totalDrivers);
+            safeSetText('stat-money-collected', `R$ ${totalCollected.toLocaleString('pt-BR')}`);
+            safeSetText('stat-money-potential', `R$ ${totalPotential.toLocaleString('pt-BR')}`);
+            safeSetText('stat-percent', `${percent.toFixed(1)}%`);
+            safeSetStyle('main-progress-bar', 'width', `${percent}%`);
+
+            // SVG Pie Chart Logic
+            const radius = 16;
+            const circumference = 2 * Math.PI * radius; // ~100.53
+            const paidRatio = totalDrivers > 0 ? fullyPaidCount / totalDrivers : 0;
+            const dashArray = `${paidRatio * circumference} ${circumference}`;
+            
+            safeSetAttr('pie-chart-circle', 'stroke-dasharray', dashArray);
+        }
+
+        function renderDriversList() {
+            const container = document.getElementById('drivers-list-container');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (drivers.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-20 bg-white/50 backdrop-blur-sm rounded-3xl border border-white/40"><p class="text-slate-700 font-medium">Lista vazia.</p></div>`;
+                return;
+            }
+
+            const months = [{k:'fev',l:'Fev'},{k:'mar',l:'Mar'},{k:'abr',l:'Abr'},{k:'mai',l:'Mai'},{k:'jun',l:'Jun'},{k:'jul',l:'Jul'}];
+            container.className = viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-10 fade-in' : 'flex flex-col gap-2 pb-10 fade-in';
+
+            drivers.forEach(driver => {
+                const payments = driver.payments || {};
+                const paidCount = Object.values(payments).filter(Boolean).length;
+                const isCompleted = paidCount === 6;
+                const initial = driver.name.charAt(0).toUpperCase();
+                let html = '';
+
+                // Helper para botões de mês
+                const renderMonthBtn = (m) => {
+                    const isPaid = payments[m.k];
+                    const bgClass = isPaid ? 'bg-green-600 text-white shadow-sm ring-1 ring-green-600' : 'bg-gray-50 text-gray-400 hover:bg-gray-100 border border-gray-200';
+                    const icon = isPaid ? getIcon('check', 12, 'stroke-[4px]') : '<div class="w-2.5 h-2.5 rounded-sm bg-gray-200"></div>';
+                    
+                    if(viewMode === 'list') {
+                         return `<button onclick="window.togglePayment('${driver.id}', '${m.k}')" class="h-8 w-10 sm:w-12 rounded flex items-center justify-center transition-all ${isPaid ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-400 border border-gray-200'} check-btn"><span class="text-[10px] font-bold">${m.l}</span></button>`;
+                    }
+                    return `<button onclick="window.togglePayment('${driver.id}', '${m.k}')" class="flex flex-col items-center justify-center p-1.5 rounded-lg transition-all duration-200 ${bgClass} check-btn"><span class="text-[9px] font-bold uppercase tracking-wider mb-0.5 opacity-90">${m.l.substring(0,1)}</span><div class="w-4 h-4 rounded flex items-center justify-center ${isPaid ? 'scale-110' : ''} check-anim">${icon}</div></button>`;
+                };
+
+                if (viewMode === 'grid') {
+                    html = `<div class="bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border p-4 transition-all hover:shadow-md ${isCompleted ? 'border-green-200 ring-1 ring-green-100' : 'border-gray-200'}">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm ${isCompleted ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-gradient-to-br from-slate-600 to-slate-800'}">${initial}</div>
+                                <div class="overflow-hidden"><h3 class="font-bold text-gray-800 text-lg leading-tight truncate">${driver.name}</h3><span class="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-full inline-block mt-1">${paidCount}/6 Meses</span></div>
+                            </div>
+                            <button onclick="window.deleteDriver('${driver.id}')" class="text-gray-400 hover:text-red-500 p-1 bg-transparent hover:bg-red-50 rounded-full transition-colors">${getIcon('trash', 16)}</button>
+                        </div>
+                        <div class="grid grid-cols-6 gap-2">${months.map(m => renderMonthBtn(m)).join('')}</div>
+                    </div>`;
+                } else if (viewMode === 'list') {
+                     html = `<div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-sm border p-3 flex flex-col sm:flex-row items-center gap-4 ${isCompleted ? 'border-green-200 bg-green-50/10' : 'border-gray-200'}">
+                        <div class="flex items-center gap-3 w-full sm:w-1/3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${isCompleted ? 'bg-green-600' : 'bg-slate-700'}">${initial}</div>
+                            <div class="min-w-0"><h3 class="font-bold text-gray-800 text-base truncate">${driver.name}</h3><div class="text-xs text-gray-500 flex items-center gap-1"><span class="${isCompleted ? 'text-green-600 font-bold' : ''}">${paidCount}/6 Pagos</span></div></div>
+                        </div>
+                        <div class="flex gap-1.5 w-full sm:w-auto justify-between sm:justify-start flex-1">${months.map(m => renderMonthBtn(m)).join('')}</div>
+                        <button onclick="window.deleteDriver('${driver.id}')" class="text-gray-300 hover:text-red-500 p-2 sm:ml-auto hover:bg-red-50 rounded-lg transition-colors">${getIcon('trash', 16)}</button>
+                    </div>`;
+                } else if (viewMode === 'compact') {
+                     html = `<div class="bg-white/95 backdrop-blur-sm rounded-md border px-3 py-2 flex items-center justify-between gap-2 hover:bg-gray-50 transition-colors ${isCompleted ? 'border-green-200' : 'border-gray-200'}">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-2 h-2 rounded-full flex-shrink-0 ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}"></div><h3 class="font-medium text-gray-700 text-sm truncate">${driver.name}</h3>
+                        </div>
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                            <div class="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden"><div class="h-full ${isCompleted ? 'bg-green-500' : 'bg-blue-500'}" style="width: ${(paidCount/6)*100}%"></div></div>
+                            <div class="text-xs font-mono text-gray-500 w-6 text-right">${paidCount}/6</div>
+                            <button onclick="window.deleteDriver('${driver.id}')" class="text-gray-300 hover:text-red-500 hover:bg-red-50 rounded p-1 transition-colors">${getIcon('trash', 14)}</button>
+                        </div>
+                    </div>`;
+                }
+                container.insertAdjacentHTML('beforeend', html);
+            });
+        }
+
+        function updateViewButtons() {
+            ['grid', 'list', 'compact'].forEach(mode => {
+                const btn = document.getElementById(`btn-view-${mode}`);
+                if (btn) {
+                    if (mode === viewMode) {
+                        btn.classList.remove('text-gray-400');
+                        btn.classList.add('bg-slate-100', 'text-blue-600', 'shadow-sm');
+                    } else {
+                        btn.classList.add('text-gray-400');
+                        btn.classList.remove('bg-slate-100', 'text-blue-600', 'shadow-sm');
+                    }
+                }
+            });
+        }
+
+        // --- ICONS ---
+        const icons = {
+            plus: `<path d="M5 12h14" /><path d="M12 5v14" />`,
+            trash: `<path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" />`,
+            check: `<polyline points="20 6 9 17 4 12" />`,
+            user: `<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />`,
+            calendar: `<rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />`,
+            dollar: `<line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />`,
+            users: `<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />`,
+            trophy: `<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />`,
+            whatsapp: `<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />`,
+            grid: `<rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />`,
+            list: `<line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />`,
+            compact: `<line x1="21" y1="10" x2="3" y2="10" /><line x1="21" y1="6" x2="3" y2="6" /><line x1="21" y1="14" x2="3" y2="14" /><line x1="21" y1="18" x2="3" y2="18" />`,
+            pie: `<path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" />`,
+            sortaz: `<path d="M15 10h5" /><path d="M15 14h5" /><path d="M4 6 9 6" /><path d="M9 6 4 18" /><path d="M4 18 9 18" />`
+        };
+        function getIcon(name, size=24, cls=""){return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${cls}">${icons[name]||''}</svg>`;}
+
+        // Helper seguro para renderizar ícones
+        function safeRenderIcon(id, name, size, cls) {
+            const el = document.getElementById(id);
+            if(el) el.innerHTML = getIcon(name, size, cls);
+        }
+
+        // Render Icons Safely
+        safeRenderIcon('icon-calendar-head', 'calendar', 16);
+        safeRenderIcon('icon-pie-title', 'pie', 16);
+        safeRenderIcon('icon-pie-center', 'pie', 16);
+        safeRenderIcon('icon-users-stat', 'users', 14);
+        safeRenderIcon('icon-dollar-stat', 'dollar', 14);
+        safeRenderIcon('icon-trophy-stat', 'trophy', 24);
+        safeRenderIcon('icon-plus-input', 'plus', 18);
+        safeRenderIcon('btn-view-grid', 'grid', 20);
+        safeRenderIcon('btn-view-list', 'list', 20);
+        safeRenderIcon('btn-view-compact', 'compact', 20);
+        safeRenderIcon('icon-whatsapp-btn', 'whatsapp', 18);
+        safeRenderIcon('icon-az-btn', 'sortaz', 18);
+
+        initApp();
+    </script>
+</body>
+</html>

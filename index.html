@@ -12,6 +12,10 @@
     <!-- Fonte Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
+    <!-- Bibliotecas para Geração de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; }
         .transition-all { transition-property: all; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 300ms; }
@@ -184,20 +188,28 @@
         <!-- RODAPÉ -->
         <div class="fixed bottom-0 left-0 right-0 p-3 bg-white/80 backdrop-blur-md border-t border-gray-200 z-50">
             <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
-                <div class="flex flex-col hidden sm:block">
+                <div class="flex flex-col hidden md:block">
                     <span class="text-[10px] font-bold text-gray-400 uppercase" id="sync-label">Status</span>
                     <span class="text-xs text-gray-600" id="sync-sublabel">Carregando...</span>
                 </div>
                 
-                <div class="flex items-center gap-2 w-full sm:w-auto">
-                    <button onclick="window.shareAlphabeticalList()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 shadow-lg transition-all hover:-translate-y-0.5 flex-1 sm:flex-none">
+                <div class="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-1 sm:pb-0">
+                    <button onclick="window.shareAlphabeticalList()" class="bg-blue-600 hover:bg-blue-700 text-white p-2.5 sm:px-4 rounded-lg text-sm font-bold flex items-center justify-center gap-1.5 shadow-lg transition-all hover:-translate-y-0.5 flex-1 md:flex-none whitespace-nowrap">
                         <span id="icon-az-btn"></span>
-                        <span>Lista (A-Z)</span>
+                        <span class="hidden sm:inline">Lista (A-Z)</span>
+                        <span class="sm:hidden">A-Z</span>
                     </button>
-                    <button onclick="window.shareWhatsApp()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 shadow-lg transition-all hover:-translate-y-0.5 flex-1 sm:flex-none">
+                    
+                    <button onclick="window.generatePDF()" class="bg-red-600 hover:bg-red-700 text-white p-2.5 sm:px-4 rounded-lg text-sm font-bold flex items-center justify-center gap-1.5 shadow-lg transition-all hover:-translate-y-0.5 flex-1 md:flex-none whitespace-nowrap">
+                        <span id="icon-pdf-btn"></span>
+                        <span class="hidden sm:inline">Gerar PDF</span>
+                        <span class="sm:hidden">PDF</span>
+                    </button>
+
+                    <button onclick="window.shareWhatsApp()" class="bg-green-600 hover:bg-green-700 text-white p-2.5 sm:px-4 rounded-lg text-sm font-bold flex items-center justify-center gap-1.5 shadow-lg transition-all hover:-translate-y-0.5 flex-1 md:flex-none whitespace-nowrap">
                         <span id="icon-whatsapp-btn"></span>
                         <span class="hidden sm:inline">Relatório Financeiro</span>
-                        <span class="sm:hidden">Relatório</span>
+                        <span class="sm:hidden">Finanças</span>
                     </button>
                 </div>
             </div>
@@ -276,7 +288,6 @@
         }
 
         function updateConnectionStatus(isOnline) {
-            // Usamos a função safe para evitar o erro se o elemento ainda não existir
             safeSetHTML('connection-status', isOnline 
                 ? '<div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div> Online' 
                 : '<div class="w-2 h-2 rounded-full bg-orange-500"></div> Offline'
@@ -380,11 +391,24 @@
             if (drivers.length === 0) { alert("Lista vazia!"); return; }
             const sortedDrivers = [...drivers].sort((a, b) => a.name.localeCompare(b.name));
             let text = `📋 *LISTA DE PARTICIPANTES (A-Z)*\nConfraternização 2026\n\n`;
+            
+            const sizeCounts = { 'P': 0, 'M': 0, 'G': 0, 'GG': 0, 'XG': 0, 'N/I': 0 };
+
             sortedDrivers.forEach((driver, index) => { 
                 const size = driver.shirtSize || 'N/I';
+                if(sizeCounts[size] !== undefined) sizeCounts[size]++;
+                else sizeCounts['N/I']++;
+                
                 text += `${index + 1} - ${driver.name} (Tam: ${size})\n`; 
             });
-            text += `\nTotal: ${sortedDrivers.length} Motoristas`;
+            
+            text += `\nTotal: ${sortedDrivers.length} Motoristas\n`;
+            
+            text += `\n👕 *RESUMO PARA ENCOMENDA*\n`;
+            Object.entries(sizeCounts).forEach(([s, count]) => {
+                if (count > 0) text += `- Tam ${s}: ${count}\n`;
+            });
+
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         };
 
@@ -409,6 +433,124 @@
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         };
 
+        // --- GERAÇÃO DE PDF ---
+        window.generatePDF = function() {
+            if (drivers.length === 0) { 
+                alert("Adicione motoristas primeiro para gerar o PDF!"); 
+                return; 
+            }
+
+            // Verifica se as bibliotecas jspdf e autotable foram carregadas
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                alert("Aguarde um momento, o gerador de PDF está carregando...");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Cores baseadas no tema Tailwind do sistema
+            const colorDark = [15, 23, 42];  // slate-900 (Primária)
+            const colorBlue = [37, 99, 235]; // blue-600  (Secundária)
+
+            // 1. Cabeçalho Personalizado
+            doc.setFontSize(20);
+            doc.setTextColor(...colorDark);
+            doc.text("Controle de Encomendas - Camisas", 14, 22);
+            
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text("Confraternização dos Motoristas 2026", 14, 29);
+            doc.text("Gerado em: " + new Date().toLocaleDateString(), 14, 35);
+
+            // 2. Dados da Tabela Principal
+            const sortedDrivers = [...drivers].sort((a, b) => a.name.localeCompare(b.name));
+            const tableData = sortedDrivers.map((d, i) => [
+                (i + 1).toString().padStart(2, '0'), 
+                d.name, 
+                d.shirtSize || 'N/I'
+            ]);
+
+            // 3. Tabela de Motoristas (A-Z)
+            doc.autoTable({
+                startY: 42,
+                head: [['Nº', 'Nome do Motorista', 'Tamanho da Camisa']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillColor: colorDark, textColor: [255, 255, 255], fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [241, 245, 249] }, // slate-50
+                styles: { font: 'helvetica', fontSize: 10, cellPadding: 3, textColor: [51, 65, 85] },
+                columnStyles: { 
+                    0: { cellWidth: 15, halign: 'center', fontStyle: 'bold' },
+                    2: { cellWidth: 50, halign: 'center', fontStyle: 'bold', textColor: colorBlue } 
+                }
+            });
+
+            // 4. Cálculos para o Resumo
+            const sizeCounts = { 'P': 0, 'M': 0, 'G': 0, 'GG': 0, 'XG': 0, 'N/I': 0 };
+            sortedDrivers.forEach(d => {
+                const size = d.shirtSize || 'N/I';
+                if(sizeCounts[size] !== undefined) sizeCounts[size]++;
+                else sizeCounts['N/I']++;
+            });
+
+            const summaryData = Object.entries(sizeCounts)
+                .filter(([_, count]) => count > 0)
+                .map(([size, count]) => [`Tamanho ${size}`, count.toString() + (count === 1 ? ' camisa' : ' camisas')]);
+
+            const totalShirts = sortedDrivers.length;
+            summaryData.push(['TOTAL GERAL', totalShirts.toString() + ' camisas']);
+
+            // 5. Posição Y (Verificar se há espaço na página atual para o resumo)
+            let finalY = doc.lastAutoTable.finalY || 40;
+            if (finalY > 220) {
+                doc.addPage();
+                finalY = 20;
+            } else {
+                finalY += 15;
+            }
+
+            // 6. Título do Resumo
+            doc.setFontSize(14);
+            doc.setTextColor(...colorDark);
+            doc.text("Resumo Quantitativo por Tamanho", 14, finalY);
+
+            // 7. Tabela de Resumo (Design Compacto)
+            doc.autoTable({
+                startY: finalY + 5,
+                head: [['Tamanho', 'Quantidade']],
+                body: summaryData,
+                theme: 'grid',
+                headStyles: { fillColor: colorBlue, textColor: [255, 255, 255] },
+                styles: { font: 'helvetica', fontSize: 11, cellPadding: 4 },
+                columnStyles: { 
+                    0: { halign: 'left', fontStyle: 'bold' },
+                    1: { halign: 'center', fontStyle: 'bold', textColor: colorDark } 
+                },
+                willDrawCell: function(data) {
+                    // Estilizar especificamente a última linha (TOTAL)
+                    if (data.row.index === summaryData.length - 1 && data.section === 'body') {
+                        doc.setFillColor(226, 232, 240); // slate-200
+                        doc.setTextColor(15, 23, 42); // slate-900
+                        doc.setFont('', 'bold');
+                    }
+                }
+            });
+
+            // 8. Rodapé Fixo do PDF (Contexto da Semcas)
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text(`Coordenação de Suporte e Logística - SEMCAS`, 14, doc.internal.pageSize.height - 10);
+                doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10, { align: 'right' });
+            }
+
+            // 9. Salvar e Baixar o Arquivo
+            doc.save("Relatorio_Camisas_Motoristas_2026.pdf");
+        };
+
         // UI Listeners
         const inputFee = document.getElementById('input-fee');
         if(inputFee) {
@@ -427,7 +569,6 @@
         }
 
         // --- SAFE DOM HELPERS ---
-        // Estas funções previnem o erro "Cannot set properties of null"
         function safeSetText(id, text) {
             const el = document.getElementById(id);
             if(el) el.innerText = text;
@@ -465,7 +606,6 @@
             const totalPotential = totalDrivers * 6 * monthlyFee;
             const percent = totalPotential > 0 ? (totalCollected / totalPotential) * 100 : 0;
 
-            // Uso das funções seguras para evitar travamentos
             safeSetText('display-fee', monthlyFee);
             safeSetText('stat-paid', fullyPaidCount);
             safeSetText('stat-pending', pendingCount);
@@ -475,9 +615,8 @@
             safeSetText('stat-percent', `${percent.toFixed(1)}%`);
             safeSetStyle('main-progress-bar', 'width', `${percent}%`);
 
-            // SVG Pie Chart Logic
             const radius = 16;
-            const circumference = 2 * Math.PI * radius; // ~100.53
+            const circumference = 2 * Math.PI * radius;
             const paidRatio = totalDrivers > 0 ? fullyPaidCount / totalDrivers : 0;
             const dashArray = `${paidRatio * circumference} ${circumference}`;
             
@@ -612,7 +751,8 @@
             list: `<line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />`,
             compact: `<line x1="21" y1="10" x2="3" y2="10" /><line x1="21" y1="6" x2="3" y2="6" /><line x1="21" y1="14" x2="3" y2="14" /><line x1="21" y1="18" x2="3" y2="18" />`,
             pie: `<path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" />`,
-            sortaz: `<path d="M15 10h5" /><path d="M15 14h5" /><path d="M4 6 9 6" /><path d="M9 6 4 18" /><path d="M4 18 9 18" />`
+            sortaz: `<path d="M15 10h5" /><path d="M15 14h5" /><path d="M4 6 9 6" /><path d="M9 6 4 18" /><path d="M4 18 9 18" />`,
+            pdf: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><path d="M12 18v-6" /><path d="M9 15l3 3 3-3" />`
         };
         function getIcon(name, size=24, cls=""){return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${cls}">${icons[name]||''}</svg>`;}
 
@@ -635,12 +775,12 @@
         safeRenderIcon('btn-view-compact', 'compact', 20);
         safeRenderIcon('icon-whatsapp-btn', 'whatsapp', 18);
         safeRenderIcon('icon-az-btn', 'sortaz', 18);
+        safeRenderIcon('icon-pdf-btn', 'pdf', 18);
 
         initApp();
     </script>
 </body>
 </html>
-
 
 
 ```
